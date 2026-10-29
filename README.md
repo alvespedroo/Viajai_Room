@@ -216,13 +216,13 @@ A demonstração em vídeo apresenta o funcionamento do aplicativo e suas princi
 O vídeo abaixo apresenta o funcionamento do Viajaí, demonstrando suas principais funcionalidades e o comportamento da persistência de dados.
 
 **Vídeo de demonstração:**  
-[https://drive.google.com/file/d/12I-5NOh7JItBI3p0qnywtjgC6FGj2zLd/view?usp=drive_link]
+https://drive.google.com/file/d/12I-5NOh7JItBI3p0qnywtjgC6FGj2zLd/view?usp=drive_link
 
 ---
 
 ## 🔗 Repositório
 
-[https://github.com/alvespedroo/Viajai_Room]
+https://github.com/alvespedroo/Viajai_Room
 
 ---
 
