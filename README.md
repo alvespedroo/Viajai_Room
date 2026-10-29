@@ -222,7 +222,7 @@ O vídeo abaixo apresenta o funcionamento do Viajaí, demonstrando suas principa
 
 ## 🔗 Repositório
 
-[INSERIR LINK DO REPOSITÓRIO NO GITHUB]
+[https://github.com/alvespedroo/Viajai_Room]
 
 ---
 
