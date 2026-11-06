@@ -156,6 +156,8 @@ A navegação entre as telas é organizada em:
 
 `AppNavigation.kt`
 
+> 📌 **Atualização (Trabalho 4):** esses arquivos foram reorganizados em pacotes (`data/RoomDatabase.kt`, `ui/AppNavigation.kt`, `ui/ViajaiMAFScreens.kt`) e o acesso aos dados saiu das telas, indo para Repositories e ViewModels. Veja a seção **Trabalho 4 — Arquitetura MVVM** mais abaixo.
+
 ---
 
 ## 🧪 Testes de persistência
@@ -182,6 +184,8 @@ A demonstração em vídeo apresenta o funcionamento do aplicativo e suas princi
 - **Coroutines:** execução de operações assíncronas.
 - **Navigation Compose:** navegação entre telas.
 - **ViewModel e Lifecycle:** suporte ao gerenciamento do ciclo de vida da interface.
+- **Arquitetura MVVM:** separação em camadas (View, ViewModel, Repository e Model).
+- **Flow e StateFlow:** atualização automática da interface quando os dados do Room mudam.
 
 ---
 
@@ -289,6 +293,189 @@ Tentei ajustar o comportamento visual e a interação, mas estava encontrando di
 
 Esse momento mostrou a importância de trabalharmos em conjunto, compartilhando conhecimentos e ajudando um ao outro quando surgem dificuldades. Assim, conseguimos avançar no desenvolvimento e concluir a funcionalidade.
 
+---
+
+# 🧱 Trabalho 4 — Arquitetura MVVM
+
+No Trabalho 4 **não criamos nenhuma tela, campo ou funcionalidade nova**. O objetivo foi pegar o app que já funcionava com Room (Trabalho 3) e reorganizá-lo em **MVVM (Model — View — ViewModel)**, separando a interface, o estado da tela e o acesso aos dados em camadas bem definidas. É um trabalho de refatoração: o app precisa continuar fazendo exatamente o que fazia antes.
+
+## 🗺️ Visão geral das camadas
+
+```
+   ┌─────────────────────────────────────────────────────────────┐
+   │  VIEW  (pacote ui)                                          │
+   │  Telas @Composable: só leem o uiState e chamam métodos      │
+   └──────────────────────────┬──────────────────────────────────┘
+                              │  collectAsState()  /  chamadas de ação
+   ┌──────────────────────────▼──────────────────────────────────┐
+   │  VIEWMODEL  (pacote viewmodel)                              │
+   │  UiState + _uiState (privado) / uiState (StateFlow público) │
+   │  viewModelScope.launch { ... }                              │
+   └──────────────────────────┬──────────────────────────────────┘
+                              │
+   ┌──────────────────────────▼──────────────────────────────────┐
+   │  REPOSITORY  (pacote data.repository)                       │
+   │  Única camada que conversa com o DAO                        │
+   └──────────────────────────┬──────────────────────────────────┘
+                              │
+   ┌──────────────────────────▼──────────────────────────────────┐
+   │  MODEL  (pacote data)                                       │
+   │  Entities, DAOs (com Flow), AppDatabase (Room) e AppContainer│
+   └─────────────────────────────────────────────────────────────┘
+```
+
+## 📁 Estrutura de pacotes
+
+```
+com.example.viajai_maf
+├── data
+│   ├── RoomDatabase.kt          # Entities, DAOs e AppDatabase
+│   ├── AppContainer.kt          # monta o banco e entrega os Repositories
+│   └── repository
+│       ├── ViagemRepository.kt
+│       ├── ChecklistRepository.kt
+│       ├── BagagemRepository.kt
+│       ├── DespesaRepository.kt
+│       ├── LugarSalvoRepository.kt
+│       ├── AvaliacaoRepository.kt
+│       └── PerfilUsuarioRepository.kt
+├── viewmodel
+│   ├── ViagemViewModel.kt       # ViagemUiState + ViewModel + Factory
+│   ├── ChecklistViewModel.kt
+│   ├── BagagemViewModel.kt
+│   ├── DespesaViewModel.kt
+│   ├── PerfilViewModel.kt
+│   ├── AvaliacaoViewModel.kt
+│   └── ViewModelUtils.kt        # funções auxiliares (executar / observar)
+└── ui
+    ├── MainActivity.kt
+    ├── AppNavigation.kt
+    ├── ViajaiDados.kt           # liga as telas aos ViewModels
+    ├── ViajaiHomeScreen.kt
+    ├── ViajaiMAFScreens.kt      # checklist, bagagem, gastos, detalhes e perfil
+    ├── ViajaiDestinosScreen.kt
+    ├── PesquisarScreen.kt
+    ├── ComentariosReviewScreen.kt
+    ├── EditarViagemScreen.kt
+    └── theme                    # Color, Theme e Type
+```
+
+## 🔄 Como um dado percorre as camadas (exemplo: adicionar item na bagagem)
+
+1. O usuário toca em **Adicionar** na `BagagemViajaiScreen` (**View**), que chama `dados.adicionarBagagem(...)`.
+2. A chamada chega ao `BagagemViewModel.adicionar(...)`, que abre um `viewModelScope.launch` e chama o Repository.
+3. O `BagagemRepository` repassa para o `BagagemDao.inserir(...)` (**Model**), e o Room grava no banco.
+4. Como `buscarTodos()` do DAO retorna um `Flow`, o **Room emite sozinho a lista atualizada**.
+5. O ViewModel recebe a nova lista e atualiza o `_uiState`. A tela, que coleta o `uiState`, se redesenha automaticamente.
+
+Ou seja: a tela **não precisa mais buscar os dados de novo** depois de inserir, atualizar ou remover.
+
+---
+
+# Respostas sobre o Trabalho 4
+
+### 1. Como estava o projeto no Trabalho 3, e o que mudou na reorganização?
+
+No Trabalho 3 o Room já funcionava e os dados sobreviviam ao fechar o app, mas tudo estava misturado. As telas (`@Composable`) falavam direto com os DAOs, criavam o próprio `CoroutineScope` com `Dispatchers.IO`, e a classe `ViajaiDados` guardava as listas em `mutableStateListOf` e precisava ser avisada para recarregar (`recarregarViagens()`, `recarregarChecklist()` etc.) depois de cada operação. Cada tela também usava um `LaunchedEffect` só para buscar os dados de novo.
+
+Na reorganização:
+
+- o código foi dividido em **pacotes** (`ui`, `data`, `data.repository`, `viewmodel`);
+- foram criados **Repositories**, e só eles falam com os DAOs;
+- o `buscarTodos()` dos DAOs passou a retornar **`Flow`**, então a lista se atualiza sozinha;
+- cada área do app ganhou um **ViewModel** com um **UiState**, usando `viewModelScope` no lugar do `CoroutineScope` solto;
+- os ViewModels são criados por **ViewModelFactory**, que recebe o Repository;
+- as telas deixaram de ter banco, DAO e `Dispatchers`: só leem o estado e chamam métodos.
+
+As Entities, os DAOs e as telas continuam os mesmos: nenhum campo, tela ou funcionalidade foi adicionado.
+
+### 2. Como o trio decidiu dividir os pacotes? O que foi para `ui`, `data`, `data.repository` e `viewmodel`?
+
+| Pacote | O que ficou nele | Por quê |
+|---|---|---|
+| `ui` | `MainActivity`, `AppNavigation`, todas as telas `@Composable` e o `ViajaiDados` (que liga as telas aos ViewModels) | Tudo que desenha ou navega. Nada de banco aqui. |
+| `data` | `RoomDatabase.kt` (7 Entities, 7 DAOs e `AppDatabase`) e o `AppContainer` | É o Model: como os dados são guardados. O `AppContainer` monta o banco e entrega os Repositories prontos. |
+| `data.repository` | 7 Repositories, um por Entity | Camada intermediária entre o ViewModel e o DAO. |
+| `viewmodel` | 6 ViewModels, cada um com seu `UiState` e sua `ViewModelFactory`, e o `ViewModelUtils` | Guarda o estado das telas e chama os Repositories. |
+
+A pasta `ui/theme` foi mantida como estava. Os arquivos de banco ficaram em `data` do jeito que já existiam no Trabalho 3, só com a troca para `Flow` no `buscarTodos()`.
+
+Um detalhe: o `ViajaiDados` ficou em `ui` porque é ele que pega os ViewModels (com `viewModel(factory = ...)`), coleta o `uiState` com `collectAsState()` e entrega os dados para as telas. Assim as telas continuaram praticamente iguais às do Trabalho 3. Dentro dele **não existe** banco, DAO, `CoroutineScope` nem `Dispatchers`.
+
+### 3. Por que o Repository existe? O que ele resolve que não existia antes?
+
+Antes, quem chamava o DAO era a própria tela. Isso deixava a interface dependente de **como** os dados são guardados: se o armazenamento mudasse, teríamos que mexer em várias telas.
+
+Agora só o Repository conversa com o DAO, e só o ViewModel conversa com o Repository. O que isso resolve:
+
+- **Uma única fonte de verdade** para os dados de cada Entity.
+- **Troca de origem sem quebrar o resto:** se um dia os dados vierem de uma API, só o Repository muda. ViewModel e telas continuam iguais.
+- **Telas mais simples:** elas não sabem que existe Room.
+
+Nossos Repositories repassam as chamadas para o DAO (`buscarTodos`, `inserir`, `atualizar`, `deletar` e as consultas específicas, como `buscarPorLugar` e `deletarCategoria`). O `AppContainer` cria todos eles em um lugar só.
+
+### 4. O que tem dentro do UiState de cada tela, e por que escolheram esses campos?
+
+Seguindo o padrão do enunciado, cada ViewModel tem um `_uiState` privado (`MutableStateFlow`, só o ViewModel altera) e um `uiState` público (`StateFlow`, somente leitura para a tela).
+
+| UiState | Campos | Por que esses campos |
+|---|---|---|
+| `ViagemUiState` | `viagens`, `selecionadaId`, `carregando`, `erro` | Lista de viagens vinda do banco e qual está selecionada. A viagem "atual" e a separação entre em planejamento e concluídas são calculadas a partir da lista. |
+| `ChecklistUiState` | `itens`, `carregando`, `erro` | Todos os itens de checklist; a tela filtra pelos itens da viagem selecionada. |
+| `BagagemUiState` | `itens`, `carregando`, `erro` | Itens da mala. |
+| `DespesaUiState` | `itens`, `carregando`, `erro` | Gastos registrados. A tela soma e filtra por viagem. |
+| `PerfilUiState` | `nome`, `lugaresSalvos`, `carregando`, `erro` | Nome do usuário e ids dos lugares salvos (tela de Perfil). |
+| `AvaliacaoUiState` | `avaliacoes`, `carregando`, `erro` | Todas as avaliações; a tela filtra por lugar ou pelas "minhas". |
+
+Todos têm **`carregando`**, para saber se a primeira leitura do banco ainda não terminou, e **`erro`**, para registrar se o `Flow` falhar. A lista principal é o que a tela precisa para se desenhar. Os dados de formulário (texto digitado) continuam como estado local da tela, porque só importam enquanto a tela está aberta.
+
+### 5. Alguma funcionalidade quebrou durante a reorganização? Como encontraram e corrigiram?
+
+Sim. Depois de mover os arquivos para os novos pacotes, **o app fechava sozinho assim que abria**.
+
+- **Como encontramos:** o código tinha compilado, então o erro estava em outro lugar. A suspeita foi o `AndroidManifest.xml`.
+- **Causa:** o manifest ainda dizia `android:name=".MainActivity"`, mas a `MainActivity` tinha ido para o pacote `ui`. O Android procurava a classe no lugar antigo, não encontrava e o app fechava.
+- **Correção:** trocar para `android:name=".ui.MainActivity"`.
+
+O aprendizado é que mover uma classe não afeta só o código Kotlin: tudo que referencia o nome dela por texto (como o manifest) também precisa ser atualizado.
+
+> ⚠️ **PREENCHER (se houver):** se vocês tiveram outro problema (por exemplo, uma tela que não atualizava ou uma importação quebrada), acrescentem aqui o que era, como acharam e como resolveram.
+
+### 6. Algum integrante do trio teve dificuldade em algum ponto? Como resolveram?
+
+> ⚠️ **PREENCHER:** descrevam com suas palavras quem teve dificuldade, em qual parte (por exemplo: entender o `Flow`, o `UiState` ou a `ViewModelFactory`) e como o trio resolveu.
+
+---
+
+## 🧪 Testes do Trabalho 4
+
+O objetivo foi garantir que o app continua fazendo tudo que fazia no Trabalho 3. Roteiro de testes:
+
+> ⚠️ **PREENCHER:** marquem com `[x]` o que vocês realmente testaram antes de entregar.
+
+- [ ] Planejar uma nova viagem (e o checklist padrão ser criado)
+- [ ] Marcar, editar, adicionar e excluir itens do checklist (inclusive arrastando para excluir)
+- [ ] Adicionar, marcar e remover itens da bagagem
+- [ ] Adicionar e remover gastos, com total e saldo atualizando
+- [ ] Salvar e remover lugares nos favoritos
+- [ ] Publicar, editar, curtir e excluir avaliações
+- [ ] Alterar o nome do perfil
+- [ ] Concluir uma viagem (com e sem itens pendentes no checklist)
+- [ ] Fechar e abrir o app e confirmar que os dados continuam lá
+
+## 📸 Prints e vídeo
+
+> ⚠️ **PREENCHER:** adicionem aqui os prints (estrutura de pacotes no Android Studio, app funcionando) e o link do vídeo de demonstração do Trabalho 4.
+
+**Vídeo de demonstração (Trabalho 4):** _link aqui_
+
+## 📝 Observações
+
+- A única ocorrência de `CoroutineScope` nas telas é o `rememberCoroutineScope()` do gesto de arrastar para excluir um item do checklist (`ViajaiMAFScreens.kt`). Ele serve só para a **animação** (`Animatable`) e **não acessa o banco**.
+- O `buscarTodos()` dos DAOs que listam tabelas inteiras retorna `Flow`. A leitura do nome do perfil (`PerfilUsuarioDao.buscar()`) continua sendo uma consulta única (`suspend`), pois lê um único registro.
+
+---
+
 ## 📌 Considerações finais
 
 O desenvolvimento do Viajaí permitiu aplicar conceitos de desenvolvimento Android utilizando Kotlin e Jetpack Compose, além de trabalhar com persistência local de dados por meio do Room.
@@ -296,3 +483,5 @@ O desenvolvimento do Viajaí permitiu aplicar conceitos de desenvolvimento Andro
 A implementação possibilitou organizar informações de diferentes viagens, realizar operações CRUD, desenvolver consultas específicas e manter os dados armazenados mesmo após o fechamento do aplicativo.
 
 O projeto busca oferecer uma experiência prática e organizada para o planejamento de viagens, reunindo em um único aplicativo recursos de checklist, controle financeiro, pesquisa de locais e avaliações.
+
+Com o Trabalho 4, o projeto também passou a seguir a arquitetura MVVM, o que deixa o código mais organizado e mais fácil de manter e evoluir.
