@@ -439,11 +439,9 @@ Sim. Depois de mover os arquivos para os novos pacotes, **o app fechava sozinho 
 
 O aprendizado é que mover uma classe não afeta só o código Kotlin: tudo que referencia o nome dela por texto (como o manifest) também precisa ser atualizado.
 
-> ⚠️ **PREENCHER (se houver):** se vocês tiveram outro problema (por exemplo, uma tela que não atualizava ou uma importação quebrada), acrescentem aqui o que era, como acharam e como resolveram.
-
 ### 6. Algum integrante do trio teve dificuldade em algum ponto? Como resolveram?
 
-> ⚠️ **PREENCHER:** descrevam com suas palavras quem teve dificuldade, em qual parte (por exemplo: entender o `Flow`, o `UiState` ou a `ViewModelFactory`) e como o trio resolveu.
+Sim. Na hora de construir, achei complicado fazer o "Excluir" ficar bem no meio daquele espaço que surge atrás do item da lista quando ele é movido para o lado. Fiquei mexendo no alinhamento e na forma como as coisas se arrumavam, mas o texto teimava em não ir para onde eu queria. O Eduardo, que trabalha junto comigo, tentou outra maneira de fazer isso e, de repente, ele conseguiu deixar o texto certinho no meio, sem precisar de nada de fora. E assim, a ação de arrastar para apagar começou a se comportar do jeito que a gente queria. Essa história me fez ver como é bom quando dividimos os problemas no time: se um de nós não acha a saída, o outro olha para aquilo com um olhar diferente e a resposta aparece com mais agilidade.
 
 ---
 
