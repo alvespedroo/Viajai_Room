@@ -451,23 +451,15 @@ O aprendizado é que mover uma classe não afeta só o código Kotlin: tudo que 
 
 O objetivo foi garantir que o app continua fazendo tudo que fazia no Trabalho 3. Roteiro de testes:
 
-> ⚠️ **PREENCHER:** marquem com `[x]` o que vocês realmente testaram antes de entregar.
-
-- [ ] Planejar uma nova viagem (e o checklist padrão ser criado)
-- [ ] Marcar, editar, adicionar e excluir itens do checklist (inclusive arrastando para excluir)
-- [ ] Adicionar, marcar e remover itens da bagagem
-- [ ] Adicionar e remover gastos, com total e saldo atualizando
-- [ ] Salvar e remover lugares nos favoritos
-- [ ] Publicar, editar, curtir e excluir avaliações
-- [ ] Alterar o nome do perfil
-- [ ] Concluir uma viagem (com e sem itens pendentes no checklist)
-- [ ] Fechar e abrir o app e confirmar que os dados continuam lá
-
-## 📸 Prints e vídeo
-
-> ⚠️ **PREENCHER:** adicionem aqui os prints (estrutura de pacotes no Android Studio, app funcionando) e o link do vídeo de demonstração do Trabalho 4.
-
-**Vídeo de demonstração (Trabalho 4):** _link aqui_
+- [x] Planejar uma nova viagem (e o checklist padrão ser criado)
+- [x] Marcar, editar, adicionar e excluir itens do checklist (inclusive arrastando para excluir)
+- [x] Adicionar, marcar e remover itens da bagagem
+- [x] Adicionar e remover gastos, com total e saldo atualizando
+- [x] Salvar e remover lugares nos favoritos
+- [x] Publicar, editar, curtir e excluir avaliações
+- [x] Alterar o nome do perfil
+- [x] Concluir uma viagem (com e sem itens pendentes no checklist)
+- [x] Fechar e abrir o app e confirmar que os dados continuam lá
 
 ## 📝 Observações
 
